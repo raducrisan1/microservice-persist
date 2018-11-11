@@ -1,0 +1,21 @@
+syntax="proto3";
+
+message StockReportRequest {
+    int32 resolution = 1;
+    int64 start = 2;
+    int64 end = 3;
+}
+
+message StockReportItem {
+    string stockname = 1;
+    int64 timestamp = 2;
+    int32 rating = 3;    
+}
+
+message StockReportResponse {
+    repeated StockReportItem StockData = 1;
+}
+
+service StockReportDataService {
+    rpc GetStockReportData(StockReportRequest) returns (StockReportResponse) {}
+}
