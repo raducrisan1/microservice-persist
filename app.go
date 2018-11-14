@@ -3,13 +3,17 @@ package main
 import (
 	"context"
 	"log"
+	"net"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/mongodb/mongo-go-driver/bson/objectid"
 	"github.com/mongodb/mongo-go-driver/mongo"
 	"github.com/raducrisan1/microservice-persist/stockinfo"
+	"github.com/raducrisan1/microservice-persist/stockreport"
 	"github.com/streadway/amqp"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func failOnError(err error, msg string) {
@@ -66,6 +70,7 @@ func main() {
 	forever := make(chan bool)
 	limiter := time.Tick(time.Second / 70)
 
+	//this goroutine reads messages from rabbitmq and writes them to mongodb
 	go func() {
 		for d := range msgs {
 			<-limiter
@@ -78,6 +83,17 @@ func main() {
 			annotatesMsg := AnnotatedRating{StockRating: protomsg, ID: objectid.New()}
 			coll.InsertOne(nil, annotatesMsg)
 		}
+	}()
+
+	//this goroutine listens to gRPC calls from
+	go func() {
+		lis, err := net.Listen("tcp", ":3040")
+		failOnError(err, "Could not start gRPC server")
+		s := grpc.NewServer()
+		stockreport.RegisterStockReportDataServiceServer(s, &GrpcServer{})
+		//this is used to allow API inspection via grpc_cli tool
+		reflection.Register(s)
+
 	}()
 
 	<-forever
