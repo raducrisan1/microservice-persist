@@ -3,17 +3,12 @@ package main
 import (
 	"context"
 	"log"
-	"net"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/mongodb/mongo-go-driver/bson/objectid"
 	"github.com/mongodb/mongo-go-driver/mongo"
 	"github.com/raducrisan1/microservice-persist/stockinfo"
-	"github.com/raducrisan1/microservice-persist/stockreport"
-	"github.com/streadway/amqp"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
 func failOnError(err error, msg string) {
@@ -31,33 +26,7 @@ type AnnotatedRating struct {
 }
 
 func main() {
-
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	failOnError(err, "could not open the connection to rabbitmq exchange")
-	defer conn.Close()
-
-	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
-
-	q, err := ch.QueueDeclare(
-		"StockRatingData",
-		true,
-		false,
-		false,
-		false,
-		nil)
-	failOnError(err, "Failed to declare a queue")
-
-	msgs, err := ch.Consume(
-		q.Name,
-		"",
-		false,
-		false,
-		false,
-		false,
-		nil)
-	failOnError(err, "Failed to register a consumer")
+	msgs := setupQueue()
 
 	mng, err := mongo.NewClient("mongodb://localhost:27017")
 	failOnError(err, "Could not create a mongodb client")
@@ -85,14 +54,9 @@ func main() {
 		}
 	}()
 
-	//this goroutine listens to gRPC calls from
+	//this goroutine listens to gRPC calls, in our case from reports microservice
 	go func() {
-		lis, err := net.Listen("tcp", ":3040")
-		failOnError(err, "Could not start gRPC server")
-		s := grpc.NewServer()
-		stockreport.RegisterStockReportDataServiceServer(s, &GrpcServer{})
-		//this is used to allow API inspection via grpc_cli tool
-		reflection.Register(s)
+		grpcdataserver()
 
 	}()
 
