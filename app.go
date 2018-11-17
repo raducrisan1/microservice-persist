@@ -36,7 +36,7 @@ func main() {
 	failOnError(err, "Could not connect do mongodb server")
 	coll := mng.Database("trading").Collection("ratings")
 
-	forever := make(chan bool)
+	stop := make(chan bool)
 	limiter := time.Tick(time.Second / 70)
 
 	//this goroutine reads messages from rabbitmq and writes them to mongodb
@@ -57,8 +57,7 @@ func main() {
 	//this goroutine listens to gRPC calls, in our case from reports microservice
 	go func() {
 		grpcdataserver()
-
 	}()
 
-	<-forever
+	<-stop
 }

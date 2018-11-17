@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net"
 
 	"github.com/raducrisan1/microservice-persist/stockreport"
@@ -10,7 +9,8 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-type grpcServer struct{}
+type grpcServer struct {
+}
 
 func grpcdataserver() {
 	lis, err := net.Listen("tcp", ":3040")
@@ -19,17 +19,18 @@ func grpcdataserver() {
 	stockreport.RegisterStockReportDataServiceServer(s, &grpcServer{})
 	//this is used to allow API inspection via grpc_cli tool
 	reflection.Register(s)
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
+	err = s.Serve(lis)
+	failOnError(err, "Could not connect do mongodb server")
 }
 
 func (s *grpcServer) GetStockReportData(ctx context.Context, req *stockreport.StockReportRequest) (*stockreport.StockReportResponse, error) {
+	//todo: read the stock report data from MongoDB
 	sd := make([]*stockreport.StockReportItem, 1)
 	sd[0] = new(stockreport.StockReportItem)
 	sd[0].Rating = 2
 	sd[0].Stockname = "NVDA"
 	rsp := stockreport.StockReportResponse{
 		StockData: sd}
+
 	return &rsp, nil
 }
