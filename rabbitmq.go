@@ -1,15 +1,21 @@
 package main
 
-import "github.com/streadway/amqp"
+import (
+	"log"
 
-func setupQueue() <-chan amqp.Delivery {
+	"github.com/streadway/amqp"
+)
+
+func createRabbitMqReader() (<-chan amqp.Delivery, *amqp.Connection, *amqp.Channel, error) {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "could not open the connection to rabbitmq exchange")
-	defer conn.Close()
 
 	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
+	if err != nil {
+		log.Fatalf("Could not open a RabbitMQ channel for read: %v", err)
+		conn.Close()
+		panic("Could not open a RabbitMQ channel for read")
+	}
 
 	q, err := ch.QueueDeclare(
 		"StockRatingData",
@@ -18,7 +24,12 @@ func setupQueue() <-chan amqp.Delivery {
 		false,
 		false,
 		nil)
-	failOnError(err, "Failed to declare a queue")
+	if err != nil {
+		log.Fatalf("Could not declare a RabbitMQ queue to read from.  %v", err)
+		conn.Close()
+		ch.Close()
+		panic("Could not declare a RabbitMQ queue to read from")
+	}
 
 	msgs, err := ch.Consume(
 		q.Name,
@@ -29,5 +40,5 @@ func setupQueue() <-chan amqp.Delivery {
 		false,
 		nil)
 	failOnError(err, "Failed to register a consumer")
-	return msgs
+	return msgs, conn, ch, err
 }
