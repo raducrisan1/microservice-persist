@@ -2,12 +2,14 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/streadway/amqp"
 )
 
 func createRabbitMqReader() (<-chan amqp.Delivery, *amqp.Connection, *amqp.Channel, error) {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	rabbitMqAddr := os.Getenv("RABBITMQ_ADDR")
+	conn, err := amqp.Dial(rabbitMqAddr)
 	failOnError(err, "could not open the connection to rabbitmq exchange")
 
 	ch, err := conn.Channel()

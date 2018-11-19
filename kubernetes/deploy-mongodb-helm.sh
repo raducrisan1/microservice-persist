@@ -1,0 +1,1 @@
+helm install --name mongodb --namespace itdays --set persistentVolume.storageClass=standard,persistentVolume.size=5Gi stable/mongodb-replicaset 

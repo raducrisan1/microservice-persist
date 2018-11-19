@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -32,13 +34,16 @@ func main() {
 	defer rabbitChannel.Close()
 	defer rabbitChannel.Close()
 
-	mng, err := mongo.NewClient("mongodb://localhost:27017")
+	mongoAddr := os.Getenv("MONGO_ADDR")
+	mng, err := mongo.NewClient(mongoAddr)
 	failOnError(err, "Could not create a mongodb client")
 	defer mng.Disconnect(nil)
 
 	err = mng.Connect(context.Background())
 	failOnError(err, "Could not connect do mongodb server")
 	coll := mng.Database("trading").Collection("ratings")
+
+	fmt.Println("microservice-persist has started")
 
 	stop := make(chan bool)
 	limiter := time.Tick(time.Second / 70)
