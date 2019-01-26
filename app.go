@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/mongodb/mongo-go-driver/bson/objectid"
+	"github.com/mongodb/mongo-go-driver/bson/primitive"
 	"github.com/mongodb/mongo-go-driver/mongo"
 	"github.com/raducrisan1/microservice-persist/stockinfo"
 )
@@ -24,7 +24,7 @@ func failOnError(err error, msg string) {
 //that it can be used in mongo db
 type AnnotatedRating struct {
 	stockinfo.StockRating
-	ID objectid.ObjectID
+	ID primitive.ObjectID
 }
 
 func main() {
@@ -58,7 +58,7 @@ func main() {
 				log.Printf("Could not deserialize protobuf message %v", msg.MessageId)
 				continue
 			}
-			annotatedMsg := AnnotatedRating{StockRating: protomsg, ID: objectid.New()}
+			annotatedMsg := AnnotatedRating{StockRating: protomsg, ID: primitive.NewObjectID()}
 			coll.InsertOne(nil, annotatedMsg)
 			msg.Ack(false)
 		}
